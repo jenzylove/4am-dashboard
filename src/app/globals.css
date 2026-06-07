@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
+/* Dark mode (default) — 4am ops console */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0d100b;
+  --foreground: #fafaf5;
+  --surface: #13170f;
+  --border: #1f2419;
+  --border-hover: #2d3526;
+  --text-muted: #9ca58a;
+  --text-faint: #5f6855;
+  --army: #94a273;
+  --warm: #d4a356;
+  --glow: rgba(212, 163, 86, 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-army: var(--army);
+  --color-warm: var(--warm);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
