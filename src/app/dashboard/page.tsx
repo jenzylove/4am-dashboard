@@ -3,6 +3,61 @@ import Link from 'next/link'
 import { SiDynatrace, SiGithub } from 'react-icons/si'
 import { createClient } from '@/utils/supabase/server'
 import RepoPicker from '@/components/RepoPicker'
+import ActivityFeed, { type Activity } from '@/components/ActivityFeed'
+
+type GitHubPR = {
+  id: number
+  title: string
+  number: number
+  html_url: string
+  state: 'open' | 'closed'
+  merged_at: string | null
+  created_at: string
+  head?: { ref?: string }
+}
+
+type WatchedRepo = {
+  repo_owner: string
+  repo_name: string
+}
+
+async function fetchAllActivity(accessToken: string, repos: WatchedRepo[]): Promise<Activity[]> {
+  try {
+    const results = await Promise.all(
+      repos.map(async (repo) => {
+        const res = await fetch(
+          `https://api.github.com/repos/${repo.repo_owner}/${repo.repo_name}/pulls?state=all&per_page=30`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            next: { revalidate: 60 },
+          }
+        )
+        if (!res.ok) return []
+        const prs: GitHubPR[] = await res.json()
+        const filtered = prs.filter((pr) => pr.head?.ref?.startsWith('4am-fix/'))
+        return filtered.map((pr) => ({
+          id: pr.id,
+          repo: `${repo.repo_owner}/${repo.repo_name}`,
+          title: pr.title,
+          number: pr.number,
+          url: pr.html_url,
+          state: pr.state,
+          merged: pr.merged_at !== null,
+          created_at: pr.created_at,
+        }))
+      })
+    )
+    return results.flat().sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+  } catch {
+    return []
+  }
+}
 
 export default async function Dashboard() {
   const supabase = await createClient()
@@ -28,6 +83,10 @@ export default async function Dashboard() {
     .from('watched_repos')
     .select('*')
     .eq('user_id', user.id)
+
+  const activities: Activity[] = githubConnection?.access_token && watchedRepos && watchedRepos.length > 0
+    ? await fetchAllActivity(githubConnection.access_token, watchedRepos)
+    : []
 
   return (
     <main className="min-h-screen relative overflow-hidden" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
@@ -96,6 +155,20 @@ export default async function Dashboard() {
               </span>
             </div>
             <RepoPicker initialWatched={watchedRepos || []} />
+          </div>
+        )}
+
+        {dynatraceConnection && githubConnection && watchedRepos && watchedRepos.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="text-xl font-semibold">
+                Recent activity<span style={{ color: 'var(--warm)' }}>.</span>
+              </h2>
+              <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                PRs 4AM has filed for you
+              </span>
+            </div>
+            <ActivityFeed activities={activities} />
           </div>
         )}
       </div>
