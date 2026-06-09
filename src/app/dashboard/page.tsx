@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { SiDynatrace, SiGithub } from 'react-icons/si'
 import { createClient } from '@/utils/supabase/server'
 import RepoPicker from '@/components/RepoPicker'
-import ActivityFeed, { type Activity } from '@/components/ActivityFeed'
+import ActivityFeed, { type Activity, timeAgo } from '@/components/ActivityFeed'
 
 type GitHubPR = {
   id: number
@@ -59,6 +59,13 @@ async function fetchAllActivity(accessToken: string, repos: WatchedRepo[]): Prom
   }
 }
 
+async function signOut() {
+  'use server'
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/')
+}
+
 export default async function Dashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -97,6 +104,7 @@ export default async function Dashboard() {
       />
 
       <div className="max-w-4xl mx-auto px-6 py-12 relative">
+        {/* Header */}
         <div className="flex items-center justify-between mb-14">
           <div className="flex items-center gap-3">
             <div className="text-2xl font-mono font-bold">4AM</div>
@@ -112,7 +120,22 @@ export default async function Dashboard() {
               Live
             </span>
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user.email}</div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user.email}</div>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-xs px-3 py-1.5 rounded-md transition-colors hover:opacity-80"
+                style={{
+                  background: 'var(--surface)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
 
         <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight">
@@ -151,7 +174,9 @@ export default async function Dashboard() {
                 Repos to watch<span style={{ color: 'var(--warm)' }}>.</span>
               </h2>
               <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
-                Toggle the ones 4AM should monitor
+                {watchedRepos && watchedRepos.length > 0
+                  ? `${watchedRepos.length} repo${watchedRepos.length === 1 ? '' : 's'} watched`
+                  : 'Toggle the ones 4AM should monitor'}
               </span>
             </div>
             <RepoPicker initialWatched={watchedRepos || []} />
@@ -165,7 +190,9 @@ export default async function Dashboard() {
                 Recent activity<span style={{ color: 'var(--warm)' }}>.</span>
               </h2>
               <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
-                PRs 4AM has filed for you
+                {activities.length > 0
+                  ? `Last fix: ${timeAgo(activities[0].created_at)}`
+                  : 'Watching — no fixes yet'}
               </span>
             </div>
             <ActivityFeed activities={activities} />
@@ -199,33 +226,15 @@ function ConnectionCard({
       <div className="flex items-start justify-between mb-4">
         <Icon className="w-7 h-7" style={{ color: iconColor }} />
         {connected ? (
-          <span
-            className="text-xs font-medium px-2 py-1 rounded-md"
-            style={{
-              background: 'color-mix(in srgb, var(--army) 15%, transparent)',
-              color: 'var(--army)',
-            }}
-          >
+          <span className="text-xs font-medium px-2 py-1 rounded-md" style={{ background: 'color-mix(in srgb, var(--army) 15%, transparent)', color: 'var(--army)' }}>
             ✓ Connected
           </span>
         ) : comingSoon ? (
-          <span
-            className="text-xs font-medium px-2 py-1 rounded-md"
-            style={{
-              background: 'color-mix(in srgb, var(--warm) 15%, transparent)',
-              color: 'var(--warm)',
-            }}
-          >
+          <span className="text-xs font-medium px-2 py-1 rounded-md" style={{ background: 'color-mix(in srgb, var(--warm) 15%, transparent)', color: 'var(--warm)' }}>
             Soon
           </span>
         ) : (
-          <span
-            className="text-xs font-medium px-2 py-1 rounded-md"
-            style={{
-              background: 'color-mix(in srgb, var(--text-faint) 20%, transparent)',
-              color: 'var(--text-muted)',
-            }}
-          >
+          <span className="text-xs font-medium px-2 py-1 rounded-md" style={{ background: 'color-mix(in srgb, var(--text-faint) 20%, transparent)', color: 'var(--text-muted)' }}>
             Not connected
           </span>
         )}
@@ -236,22 +245,14 @@ function ConnectionCard({
         <div className="text-xs font-mono mb-4" style={{ color: 'var(--text-muted)' }}>{details}</div>
       )}
       {comingSoon ? (
-        <button
-          disabled
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed"
-          style={{ background: 'var(--border)', color: 'var(--text-faint)' }}
-        >
+        <button disabled className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed" style={{ background: 'var(--border)', color: 'var(--text-faint)' }}>
           Connect
         </button>
       ) : (
         <Link
           href={connectHref}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          style={
-            connected
-              ? { background: 'var(--border)', color: 'var(--text-muted)' }
-              : { background: 'var(--foreground)', color: 'var(--background)' }
-          }
+          style={connected ? { background: 'var(--border)', color: 'var(--text-muted)' } : { background: 'var(--foreground)', color: 'var(--background)' }}
         >
           {connected ? 'Reconnect' : 'Connect'}
         </Link>

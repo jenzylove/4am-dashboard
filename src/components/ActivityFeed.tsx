@@ -9,7 +9,7 @@ export type Activity = {
   created_at: string
 }
 
-function timeAgo(iso: string): string {
+export function timeAgo(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   if (seconds < 60) return 'just now'
   const minutes = Math.floor(seconds / 60)
