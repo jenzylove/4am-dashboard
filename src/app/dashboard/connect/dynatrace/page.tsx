@@ -143,6 +143,17 @@ export default function ConnectDynatrace() {
               Cancel
             </Link>
           </div>
+          <p className="text-sm text-[var(--text-muted)] mt-4">
+  Don&apos;t have Dynatrace?{" "}
+  <a 
+    href="https://www.dynatrace.com/trial/" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="text-[var(--warm)] hover:underline"
+  >
+    Start a 15-day free trial →
+  </a>
+</p>
         </form>
 
         {/* Trust panel — what we do (and don't) with this */}
